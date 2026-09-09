@@ -1,0 +1,426 @@
+openapi: 3.0.0
+info:
+  title: LeagueBoard API
+  version: 1.0.0
+  description: Sports League Scoreboard API
+
+servers:
+  - url: http://localhost:8000
+    description: Development server
+
+paths:
+  /api/auth/login:
+    post:
+      summary: User login
+      tags:
+        - Auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+
+  /api/auth/logout:
+    post:
+      summary: User logout
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+
+  /api/auth/me:
+    get:
+      summary: Get current user
+      tags:
+        - Auth
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Current user info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+
+  /api/leagues:
+    get:
+      summary: List all leagues
+      tags:
+        - Leagues
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of leagues
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/League'
+        '401':
+          description: Unauthorized
+
+    post:
+      summary: Create a new league
+      tags:
+        - Leagues
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateLeagueRequest'
+      responses:
+        '201':
+          description: League created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/League'
+        '401':
+          description: Unauthorized
+
+  /api/leagues/{league_id}:
+    get:
+      summary: Get league details
+      tags:
+        - Leagues
+      parameters:
+        - name: league_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: League details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/League'
+        '404':
+          description: League not found
+
+  /api/leagues/{league_id}/standings:
+    get:
+      summary: Get league standings
+      tags:
+        - Standings
+      parameters:
+        - name: league_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: League standings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Standing'
+
+  /api/leagues/{league_id}/games:
+    get:
+      summary: Get league games
+      tags:
+        - Games
+      parameters:
+        - name: league_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Game'
+
+  /api/games:
+    get:
+      summary: Get recent games
+      tags:
+        - Games
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 5
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Recent games
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Game'
+
+  /api/games/{game_id}:
+    get:
+      summary: Get game details
+      tags:
+        - Games
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Game details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '404':
+          description: Game not found
+
+    put:
+      summary: Update game score (admin only)
+      tags:
+        - Games
+      parameters:
+        - name: game_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGameRequest'
+      responses:
+        '200':
+          description: Game updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Game'
+        '403':
+          description: Forbidden (admin only)
+        '404':
+          description: Game not found
+
+  /api/teams/{team_id}:
+    get:
+      summary: Get team details
+      tags:
+        - Teams
+      parameters:
+        - name: team_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Team details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+        '404':
+          description: Team not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        token_type:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+        role:
+          type: string
+          enum: [admin, spectator]
+
+    League:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sport:
+          type: string
+        season:
+          type: integer
+
+    CreateLeagueRequest:
+      type: object
+      required:
+        - name
+        - sport
+        - season
+      properties:
+        name:
+          type: string
+        sport:
+          type: string
+        season:
+          type: integer
+
+    Team:
+      type: object
+      properties:
+        id:
+          type: integer
+        league_id:
+          type: integer
+        name:
+          type: string
+        wins:
+          type: integer
+        losses:
+          type: integer
+        draws:
+          type: integer
+        points:
+          type: integer
+        roster:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
+
+    Player:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        number:
+          type: integer
+        position:
+          type: string
+
+    Game:
+      type: object
+      properties:
+        id:
+          type: integer
+        league_id:
+          type: integer
+        home_team_id:
+          type: integer
+        away_team_id:
+          type: integer
+        home_team:
+          type: string
+        away_team:
+          type: string
+        home_score:
+          type: integer
+          nullable: true
+        away_score:
+          type: integer
+          nullable: true
+        date:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [scheduled, finished]
+
+    UpdateGameRequest:
+      type: object
+      required:
+        - home_score
+        - away_score
+      properties:
+        home_score:
+          type: integer
+        away_score:
+          type: integer
+
+    Standing:
+      type: object
+      properties:
+        team_id:
+          type: integer
+        team_name:
+          type: string
+        played:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        draws:
+          type: integer
+        points:
+          type: integer

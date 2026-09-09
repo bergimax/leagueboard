@@ -1,0 +1,96 @@
+.standings {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.standings h1 {
+  color: #1e293b;
+  margin-bottom: 2rem;
+}
+
+.standings-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.standings-table thead {
+  background: #f8fafc;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.standings-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.standings-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.standings-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.rank {
+  font-weight: bold;
+  color: #2563eb;
+  width: 60px;
+}
+
+.team-name {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.wins {
+  color: #16a34a;
+  font-weight: 500;
+}
+
+.losses {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.draws {
+  color: #f59e0b;
+}
+
+.points {
+  color: #2563eb;
+  font-size: 1.1rem;
+}
+
+.no-data {
+  text-align: center;
+  color: #94a3b8;
+  padding: 2rem;
+}
+
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+@media (max-width: 768px) {
+  .standings {
+    padding: 1rem;
+  }
+
+  .standings-table {
+    font-size: 0.9rem;
+  }
+
+  .standings-table th, .standings-table td {
+    padding: 0.75rem;
+  }
+}

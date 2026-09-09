@@ -1,9 +1,116 @@
-// Mock API Service - Centralized API calls for LeagueBoard
-// Replace with actual backend calls when API is ready
+// LeagueBoard API Service - Real backend calls
+// Connected to FastAPI backend at http://localhost:8000
 
-const MOCK_DELAY = 300; // Simulate network delay
+const API_BASE = 'http://localhost:8000/api'
 
-// Mock data
+const api = {
+  // Helper to make requests
+  async request(method, endpoint, body = null) {
+    const token = localStorage.getItem('token')
+    const headers = {
+      'Content-Type': 'application/json'
+    }
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const options = {
+      method,
+      headers
+    }
+    if (body) {
+      options.body = JSON.stringify(body)
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}${endpoint}`, options)
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { success: false, error: data.detail || 'Error' }
+      }
+      return { success: true, data }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Authentication
+  login: async (email, password) => {
+    const result = await api.request('POST', '/auth/login', { email, password })
+    if (result.success) {
+      const { access_token, user } = result.data
+      localStorage.setItem('token', access_token)
+      localStorage.setItem('user', JSON.stringify(user))
+      return { success: true, user }
+    }
+    return result
+  },
+
+  logout: async () => {
+    localStorage.removeItem('token')
+    localStorage.removeItem('user')
+    return { success: true }
+  },
+
+  getCurrentUser: async () => {
+    const user = localStorage.getItem('user')
+    if (user) {
+      return { success: true, user: JSON.parse(user) }
+    }
+    return { success: false }
+  },
+
+  // Leagues
+  getLeagues: async () => {
+    return api.request('GET', '/leagues')
+  },
+
+  getLeague: async (leagueId) => {
+    return api.request('GET', `/leagues/${leagueId}`)
+  },
+
+  // Standings
+  getStandings: async (leagueId) => {
+    const result = await api.request('GET', `/leagues/${leagueId}/standings`)
+    if (result.success) {
+      return { success: true, data: result.data }
+    }
+    return result
+  },
+
+  // Games/Schedule
+  getGames: async (leagueId) => {
+    const result = await api.request('GET', `/leagues/${leagueId}/games`)
+    if (result.success) {
+      return { success: true, data: result.data }
+    }
+    return result
+  },
+
+  getRecentGames: async () => {
+    return api.request('GET', '/games')
+  },
+
+  getGame: async (gameId) => {
+    return api.request('GET', `/games/${gameId}`)
+  },
+
+  // Teams
+  getTeam: async (teamId) => {
+    return api.request('GET', `/teams/${teamId}`)
+  },
+
+  // Admin: Update game score
+  updateGameScore: async (gameId, homeScore, awayScore) => {
+    return api.request('PUT', `/games/${gameId}`, {
+      home_score: homeScore,
+      away_score: awayScore
+    })
+  }
+}
+
+// Keep this for reference - old mock data (no longer used)
 const mockData = {
   currentUser: {
     id: 1,
@@ -107,117 +214,6 @@ const mockData = {
       { id: 21, team_id: 5, name: 'Klay Thompson', number: 11, position: 'Shooting Guard' },
       { id: 22, team_id: 5, name: 'Draymond Green', number: 23, position: 'Power Forward' }
     ]
-  }
-};
-
-// Helper to simulate async delay
-const delay = (ms = MOCK_DELAY) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Auth APIs
-export const api = {
-  // Authentication
-  login: async (email, password) => {
-    await delay();
-    if (email === 'admin@example.com' && password === 'password123') {
-      localStorage.setItem('token', mockData.currentUser.token);
-      localStorage.setItem('user', JSON.stringify(mockData.currentUser));
-      return { success: true, user: mockData.currentUser };
-    }
-    return { success: false, error: 'Invalid credentials' };
-  },
-
-  logout: async () => {
-    await delay();
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    return { success: true };
-  },
-
-  getCurrentUser: async () => {
-    await delay();
-    const user = localStorage.getItem('user');
-    if (user) {
-      return { success: true, user: JSON.parse(user) };
-    }
-    return { success: false };
-  },
-
-  // Leagues
-  getLeagues: async () => {
-    await delay();
-    return { success: true, data: mockData.leagues };
-  },
-
-  getLeague: async (leagueId) => {
-    await delay();
-    const league = mockData.leagues.find(l => l.id === parseInt(leagueId));
-    return { success: !!league, data: league };
-  },
-
-  // Standings
-  getStandings: async (leagueId) => {
-    await delay();
-    const teams = mockData.teams[leagueId] || [];
-    const standings = teams
-      .sort((a, b) => b.points - a.points)
-      .map((team, index) => ({
-        ...team,
-        played: team.wins + team.losses + team.draws
-      }));
-    return { success: true, data: standings };
-  },
-
-  // Games/Schedule
-  getGames: async (leagueId) => {
-    await delay();
-    const games = mockData.games.filter(g => g.league_id === parseInt(leagueId));
-    return { success: true, data: games };
-  },
-
-  getRecentGames: async () => {
-    await delay();
-    const recent = mockData.games
-      .filter(g => g.status === 'finished')
-      .sort((a, b) => new Date(b.date) - new Date(a.date))
-      .slice(0, 5);
-    return { success: true, data: recent };
-  },
-
-  getGame: async (gameId) => {
-    await delay();
-    const game = mockData.games.find(g => g.id === parseInt(gameId));
-    return { success: !!game, data: game };
-  },
-
-  // Teams
-  getTeam: async (teamId) => {
-    await delay();
-    const teams = Object.values(mockData.teams).flat();
-    const team = teams.find(t => t.id === parseInt(teamId));
-    if (team) {
-      return {
-        success: true,
-        data: {
-          ...team,
-          roster: mockData.players[teamId] || [],
-          league_name: mockData.leagues.find(l => l.id === team.league_id)?.name || 'Unknown'
-        }
-      };
-    }
-    return { success: false };
-  },
-
-  // Admin: Update game score
-  updateGameScore: async (gameId, homeScore, awayScore) => {
-    await delay();
-    const game = mockData.games.find(g => g.id === parseInt(gameId));
-    if (game) {
-      game.home_score = parseInt(homeScore);
-      game.away_score = parseInt(awayScore);
-      game.status = 'finished';
-      return { success: true, data: game };
-    }
-    return { success: false, error: 'Game not found' };
   }
 };
 
